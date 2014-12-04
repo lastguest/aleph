@@ -1,0 +1,25 @@
+{
+    "name": "lastguest/aleph",
+    "type": "library",
+    "description": "A simple PHP framework for very small sites",
+    "keywords": ["framework","fast"],
+    "homepage": "https://github.com/lastguest/aleph",
+    "version": "1.0.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Stefano Azzolini",
+            "email": "lastguest@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3"
+    },
+    "config": {
+        "preferred-install": "dist"
+    },
+    "minimum-stability": "stable",
+    "autoload": {
+        "files": ["src/aleph.php"]
+    }
+}
