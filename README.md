@@ -1,4 +1,4 @@
-<h1><img src="docs/logo.png" height="130"> Aleph</h1>
+<h1><img src="docs/aleph.png" height="100"> Aleph</h1>
 
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/lastguest/aleph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
