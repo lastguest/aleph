@@ -2,12 +2,10 @@
 
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/lastguest/aleph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Build Status](https://travis-ci.org/lastguest/aleph.svg)](https://travis-ci.org/lastguest/aleph)
 [![Total Downloads](https://poser.pugx.org/lastguest/aleph/downloads.svg)](https://packagist.org/packages/lastguest/aleph)
 [![Latest Stable Version](https://poser.pugx.org/lastguest/aleph/v/stable.svg)](https://packagist.org/packages/lastguest/aleph)
 [![Latest Unstable Version](https://poser.pugx.org/lastguest/aleph/v/unstable.svg)](https://packagist.org/packages/lastguest/aleph)
 [![License](https://poser.pugx.org/lastguest/aleph/license.svg)](https://packagist.org/packages/lastguest/aleph)
-[![HHVM Status](http://hhvm.h4cc.de/badge/lastguest/aleph.svg)](http://hhvm.h4cc.de/package/lastguest/aleph)
 
 > Aleph is a very simple PHP framework for very small sites.
 
