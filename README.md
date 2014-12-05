@@ -17,23 +17,42 @@ Install via [composer](https://getcomposer.org/download/):
 $ composer require lastguest/aleph -o
 ```
 
-Download the framework file:
+Or download only [the framework file](https://raw.githubusercontent.com/lastguest/aleph/master/src/aleph.php)
 
-```bash
-dist/aleph.min.php
-```
-
-Remote include the framework file: (needs `allow_url_include = true` in php.ini)
+Or remote include the framework file: (needs `allow_url_include = true` in php.ini)
 
 ```php
 <?php
-include "https://raw.githubusercontent.com/lastguest/aleph/master/dist/aleph.min.php";
+include "https://raw.githubusercontent.com/lastguest/aleph/master/src/aleph.php";
 ```
 
 
 ## Documentation
 
 See the [wiki](https://github.com/lastguest/aleph/wiki).
+
+## Examples
+
+**Simple routing**
+
+```php
+<?php
+include "aleph.php";
+
+get('/',function(){
+  echo "<h1>Hello!</h1>";
+});
+
+// If you return an array or an object it will served as JSON 
+get('/api/todos',function(){
+  return [
+    [ "id"=>1, "text"=>"Write documentation" ],
+    [ "id"=>2, "text"=>"Smile" ],
+    [ "id"=>3, "text"=>"Play more games" ],
+    [ "id"=>4, "text"=>"Conquer the World" ],
+  ];
+});
+```
 
 
 ## Contributing
