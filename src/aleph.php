@@ -8,16 +8,21 @@
  * @package aleph
  * @author lastguest@gmail.com
  * @url https://github.com/lastguest/aleph
- * @version 1.0.0
+ * @version 1.1.0
  * @copyright Stefano Azzolini - 2014 - http://dreamnoctis.com
  */
 
 /*+ MINIMIZE */
 
 /**
+ * ==========================
  * DEPENDENCY CONTAINER
+ * ==========================
  */
 
+/**
+ * Services registry
+ */
 function service($name, $value=null){
   static $services = array();
   if (is_null($value)) {
@@ -30,9 +35,14 @@ function service($name, $value=null){
 }
 
 /**
+ * ==========================
  * OPTIONS
+ * ==========================
  */
 
+/**
+ * Options registry
+ */
 function options($key=null, $value=null){
   static $options = array();
   if (is_null($key)) return $options;
@@ -44,9 +54,14 @@ function options($key=null, $value=null){
 }
 
 /**
+ * ==========================
  * REQUEST
+ * ==========================
  */
 
+/**
+ * Request module
+ */
 function request(){
   $headers = array();
   $uri = rtrim(parse_url(filter_input(INPUT_SERVER,'REQUEST_URI'),PHP_URL_PATH),'/')?:'/';
@@ -66,6 +81,9 @@ function request(){
 }
 
 
+/**
+ * Quit application
+ */
 function quit($status=204){
   if (function_exists('http_response_code')){
     http_response_code($status);
@@ -76,9 +94,14 @@ function quit($status=204){
 }
 
 /**
+ * ==========================
  * RESPONSE
+ * ==========================
  */
 
+/**
+ * Reponse module
+ */
 function response(/* ... */){
   static $headers = array(), $fragments = array();
   $params = func_get_args();
@@ -119,7 +142,13 @@ function response(/* ... */){
 }
 
 /**
+ * ==========================
  * EVENTS
+ * ==========================
+ */
+
+/**
+ * Event module
  */
 function event($action, $event, $callback){
   static $events = array();
@@ -144,7 +173,13 @@ function event($action, $event, $callback){
 }
 
 /**
+ * ==========================
  * EMAIL
+ * ==========================
+ */
+
+/**
+ * PHP mail function helper
  */
 function email($from, $to, $subject, $body, $extra_head=array()){
   $time = $_SERVER['REQUEST_TIME'];
@@ -171,9 +206,14 @@ function email($from, $to, $subject, $body, $extra_head=array()){
 }
 
 /**
+ * ==========================
  * FILTERS
+ * ==========================
  */
 
+/**
+ * Bind a filter function to an hook
+ */
 function filter($name, $callback = null){
   static $filters = array();
   if (is_callable($callback)) {
@@ -189,27 +229,44 @@ function filter($name, $callback = null){
 }
 
 
+/**
+ * Bind a callback to an event
+ */
 function on($event, $callback){
   event('on', $event, $callback);
 }
 
+/**
+ * Unbind a callback from an event
+ */
 function off($event, $callback = null){
   event('off', $event, $callback);
 }
 
+/**
+ * Triggers an event
+ */
 function trigger($event /* ... */){
   event('trigger', $event, array_slice(func_get_args(), 1));
 }
 
+/**
+ * Triggers an event and clears binded callbacks queue.
+ */
 function triggerOnce($event /* ... */){
   event('trigger', $event, array_slice(func_get_args(), 1));
   event('off', $event, null);
 }
 
 /**
+ * ==========================
  * TEMPLATE
+ * ==========================
  */
 
+/**
+ * Simple template engine
+ */
 function template($name, $params=array()){
   static $templates = array();
   $template_dir = rtrim(options('templates.dir')?:__DIR__.'/templates','/');
@@ -301,9 +358,14 @@ function template($name, $params=array()){
 }
 
 /**
+ * ==========================
  * ROUTES
+ * ==========================
  */
 
+/**
+ * Auto dispatch on script shutdown
+ */
 register_shutdown_function(function(){
   route();
   $response = response();
@@ -312,23 +374,37 @@ register_shutdown_function(function(){
   trigger('app.exit');
 });
 
+/**
+ * Route on HTTP GET
+ */
 function get($path, $callback){
   route('get',$path,$callback);
 }
 
+/**
+ * Route on HTTP POST
+ */
 function post($path, $callback){
   route('post',$path,$callback);
 }
 
+/**
+ * Route on HTTP PUT
+ */
 function put($path, $callback){
   route('put',$path,$callback);
 }
 
+/**
+ * Route on HTTP DELETE
+ */
 function delete($path, $callback){
   route('delete',$path,$callback);
 }
 
-
+/**
+ * Basic URL router
+ */
 function route($method='@', $path='', $callback=null){
   static $routes = array();
   if ($method == '@') {
@@ -369,9 +445,14 @@ function route($method='@', $path='', $callback=null){
 }
 
 /**
+ * ==========================
  * DATABASE
+ * ==========================
  */
 
+/**
+ * Database module
+ */
 function database(/* ... */){
     $args = func_get_args();
     $action = array_shift($args);
@@ -394,7 +475,9 @@ function database(/* ... */){
     }
 }
 
-// Standard database uses in-memory sqlite
+/**
+ * Standard database uses in-memory sqlite
+ */
 service('database', function(){
     $pdo = new PDO('sqlite::memory:',array(
         PDO::ATTR_ERRMODE          => PDO::ERRMODE_EXCEPTION,
@@ -404,7 +487,9 @@ service('database', function(){
     return $pdo;
 });
 
-
+/**
+ * Fetch all results from sql query, via callback or as a whole.
+ */
 function sql_each($sql, $callback, $params=array()){
     try {
         $db = service('database');
@@ -423,6 +508,9 @@ function sql_each($sql, $callback, $params=array()){
     }
 }
 
+/**
+ * Fetch single row from sql results
+ */
 function sql_row($sql, $params=array()){
     try {
         $db = service('database');
@@ -435,6 +523,9 @@ function sql_row($sql, $params=array()){
     }
 }
 
+/**
+ * Fetch column from sql results
+ */
 function sql_value($sql, $params=array(), $column=0){
     try {
         $db = service('database');
@@ -447,12 +538,14 @@ function sql_value($sql, $params=array(), $column=0){
     }
 }
 
+/**
+ * Execute raw sql code
+ */
 function sql($sql, $params=array()){
     try {
         $db = service('database');
         $statement = $db->prepare($sql);
-        $statement->execute($params);
-        return $statement->fetchAll(PDO::FETCH_CLASS);
+        return $statement->execute($params);
     } catch (PDOException $e) {
         trigger('database.error',$e,$sql,$params);
         return false;
