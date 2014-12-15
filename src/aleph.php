@@ -404,19 +404,6 @@ service('database', function(){
     return $pdo;
 });
 
-  try {
-    $stmt = $dbh->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
-    $stmt->execute();
-    $row = $stmt->fetch(PDO::FETCH_NUM, PDO::FETCH_ORI_LAST);
-    do {
-      $data = $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\n";
-      print $data;
-    } while ($row = $stmt->fetch(PDO::FETCH_NUM, PDO::FETCH_ORI_PRIOR));
-    $stmt = null;
-  }
-  catch (PDOException $e) {
-    print $e->getMessage();
-  }
 
 function sql_each($sql, $callback, $params=array()){
     try {
