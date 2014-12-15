@@ -66,7 +66,7 @@ function request(){
 }
 
 
-function quit($status=500){
+function quit($status=204){
   if (function_exists('http_response_code')){
     http_response_code($status);
   } else {
@@ -146,18 +146,20 @@ function event($action, $event, $callback){
 /**
  * EMAIL
  */
-function email($from, $to, $subject, $body){
+function email($from, $to, $subject, $body, $head){
   $time = $_SERVER['REQUEST_TIME'];
-  $head = implode("\r\n",array(
-    "From: {$from}",
-    "Reply-To: {$from}",
-    "Return-Path: {$from}",
-    "Content-type: text/html; charset=\"UTF-8\"",
-    "Content-Transfer-Encoding: 7bit",
-    "Date: " . date('r', $time),
-    "Message-ID: <$time".md5($time)."@{$_SERVER['SERVER_NAME']}>",
-    "MIME-Version: 1.0",
-  ));
+  if (!is_array($head)) {
+      $head = implode("\r\n",array(
+          "From: {$from}",
+          "Reply-To: {$from}",
+          "Return-Path: {$from}",
+          "Content-type: text/html; charset=\"UTF-8\"",
+          "Content-Transfer-Encoding: 7bit",
+          "Date: " . date('r', $time),
+          "Message-ID: <$time".md5($time)."@{$_SERVER['SERVER_NAME']}>",
+          "MIME-Version: 1.0",
+      ));
+  }
   $subject = '=?UTF-8?B?' . base64_encode(str_replace("\n", '', $subject)) . '?=';
   foreach((array)$to as $recipient){
     $_to = str_replace("\n", '', $recipient);
@@ -362,4 +364,29 @@ function route($method='@', $path='', $callback=null){
       'callback'  => $callback ?: function(){},
     );
   }
+    /*
+     * DATABASE
+     */
+
+}
+function connectDB($host,$user,$pass,$db) {
+    $dsn = 'mysql:dbname='.$db.';host='.$host;
+    try {
+        $pdo = new PDO($dsn,$user,$pass);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+
+        return $pdo;
+    }
+    catch (PDOException $e) {
+        return array(
+            'message'=>$e->getMessage(),
+            'code'=>$e->getCode(),
+            'file'=>$e->getFile(),
+            'line'=>$e->getLine(),
+            'trace'=>$e->getTrace(),
+            'traceString'=>$e->getTraceAsString()
+        );
+    }
 }
