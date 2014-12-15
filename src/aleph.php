@@ -56,8 +56,8 @@ function request(){
   }
   $method = strtolower(filter_input(INPUT_SERVER,'REQUEST_METHOD'));
   return array(
-    'method'    => /*filter('request.method',*/$method/*)*/,
-    'uri'       => filter('request.uri',$uri),
+    'method'    => filter('request.method', $method),
+    'uri'       => filter('request.uri', $uri),
     'query'     => filter_input_array(INPUT_GET),
     'post'      => filter_input_array(INPUT_POST),
     'cookies'   => filter_input_array(INPUT_COOKIE),
@@ -70,7 +70,7 @@ function quit($status=204){
   if (function_exists('http_response_code')){
     http_response_code($status);
   } else {
-    header("Status: $status",true,$status);
+    header("Status: $status", true, $status);
   }
   exit;
 }
@@ -146,24 +146,26 @@ function event($action, $event, $callback){
 /**
  * EMAIL
  */
-function email($from, $to, $subject, $body, $head){
+function email($from, $to, $subject, $body, $extra_head=array()){
   $time = $_SERVER['REQUEST_TIME'];
-  if (!is_array($head)) {
-      $head = implode("\r\n",array(
-          "From: {$from}",
-          "Reply-To: {$from}",
-          "Return-Path: {$from}",
-          "Content-type: text/html; charset=\"UTF-8\"",
-          "Content-Transfer-Encoding: 7bit",
-          "Date: " . date('r', $time),
-          "Message-ID: <$time".md5($time)."@{$_SERVER['SERVER_NAME']}>",
-          "MIME-Version: 1.0",
-      ));
+  $headers = array();
+  foreach(array_merge(array(
+      'From'         => $from,
+      'Reply-To'     => $from,
+      'Return-Path'  => $from,
+      'Content-Type' => 'text/html; charset="UTF-8"',
+      'Content-Transfer-Encoding' => '7bit',
+      'Date'         => date('r', $time),
+      'Message-ID'   => "<$time".md5($time)."@".(getenv('SERVER_NAME')?:'localhost').">",
+      'MIME-Version' => '1.0',
+  ),$extra_head) as $key => $value) {
+    $headers[] = "$key: $value";
   }
+  $headers = implode("\r\n",$headers);
   $subject = '=?UTF-8?B?' . base64_encode(str_replace("\n", '', $subject)) . '?=';
   foreach((array)$to as $recipient){
     $_to = str_replace("\n", '', $recipient);
-    $results[$_to] = mail($_to,$subject,$body,$head);
+    $results[$_to] = mail($_to, $subject, $body, $headers);
   }
   return $results;
 }
@@ -364,29 +366,108 @@ function route($method='@', $path='', $callback=null){
       'callback'  => $callback ?: function(){},
     );
   }
-    /*
-     * DATABASE
-     */
-
 }
-function connectDB($host,$user,$pass,$db) {
-    $dsn = 'mysql:dbname='.$db.';host='.$host;
-    try {
-        $pdo = new PDO($dsn,$user,$pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+/**
+ * DATABASE
+ */
 
-        return $pdo;
+function database(/* ... */){
+    $args = func_get_args();
+    $action = array_shift($args);
+    switch ($action) {
+        case 'init':
+            // Prepare new database service
+            service('database', function() use ($args) {
+                $pdo = new PDO(
+                               $args[0],
+                               isset($args[1])?$args[1]:'',
+                               isset($args[1])?$args[1]:'',
+                               array(
+                    PDO::ATTR_ERRMODE          => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                ));
+                trigger('database.init',$pdo);
+                return $pdo;
+            });
+        break;
     }
-    catch (PDOException $e) {
-        return array(
-            'message'=>$e->getMessage(),
-            'code'=>$e->getCode(),
-            'file'=>$e->getFile(),
-            'line'=>$e->getLine(),
-            'trace'=>$e->getTrace(),
-            'traceString'=>$e->getTraceAsString()
-        );
+}
+
+// Standard database uses in-memory sqlite
+service('database', function(){
+    $pdo = new PDO('sqlite::memory:',array(
+        PDO::ATTR_ERRMODE          => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ));
+    trigger('database.init',$pdo);
+    return $pdo;
+});
+
+  try {
+    $stmt = $dbh->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_NUM, PDO::FETCH_ORI_LAST);
+    do {
+      $data = $row[0] . "\t" . $row[1] . "\t" . $row[2] . "\n";
+      print $data;
+    } while ($row = $stmt->fetch(PDO::FETCH_NUM, PDO::FETCH_ORI_PRIOR));
+    $stmt = null;
+  }
+  catch (PDOException $e) {
+    print $e->getMessage();
+  }
+
+function sql_each($sql, $callback, $params=array()){
+    try {
+        $db = service('database');
+        $statement = $db->prepare($sql);
+        $statement->execute($params);
+        if (is_callable($callback)){
+            while ($row = $statement->fetchObject()){
+                call_user_func($callback, $row);
+            }
+        } else {
+            return $statement->fetchAll(PDO::FETCH_CLASS);
+        }
+    } catch (PDOException $e) {
+        trigger('database.error',$e,$sql,$params);
+        return false;
+    }
+}
+
+function sql_row($sql, $params=array()){
+    try {
+        $db = service('database');
+        $statement = $db->prepare($sql);
+        $statement->execute($params);
+        return $statement->fetchObject();
+    } catch (PDOException $e) {
+        trigger('database.error',$e,$sql,$params);
+        return false;
+    }
+}
+
+function sql_value($sql, $params=array(), $column=0){
+    try {
+        $db = service('database');
+        $statement = $db->prepare($sql);
+        $statement->execute($params);
+        return $statement->fetchColumn($column);
+    } catch (PDOException $e) {
+        trigger('database.error',$e,$sql,$params);
+        return false;
+    }
+}
+
+function sql($sql, $params=array()){
+    try {
+        $db = service('database');
+        $statement = $db->prepare($sql);
+        $statement->execute($params);
+        return $statement->fetchAll(PDO::FETCH_CLASS);
+    } catch (PDOException $e) {
+        trigger('database.error',$e,$sql,$params);
+        return false;
     }
 }
