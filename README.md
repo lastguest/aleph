@@ -81,3 +81,7 @@ Core is maintained by using the [Semantic Versioning Specification (SemVer)](htt
 
 Copyright 2014 [Stefano Azzolini](http://dreamnoctis.com) under the [MIT license](LICENSE.md).
 
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/lastguest/aleph/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
