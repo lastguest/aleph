@@ -29,11 +29,7 @@ include "https://raw.githubusercontent.com/lastguest/aleph/master/src/aleph.php"
 
 ## Documentation
 
-See the [wiki](https://github.com/lastguest/aleph/wiki).
-
-## Examples
-
-**Simple routing**
+### URL Routing
 
 ```php
 <?php
@@ -54,6 +50,50 @@ get('/api/todos',function(){
 });
 ```
 
+### Database
+
+#### Init database DSN
+
+```php
+database('init','mysql:host=localhost;dbname=test','root','root');
+```
+
+#### Run query and get single column
+
+```php
+$uid = sql_value('select id from users where username = ? limit 1', array($username));
+```
+
+#### Run query and get single row
+
+```php
+$user = sql_row('select * from users where username = ?', array($username));
+echo $user->email;
+```
+
+#### Run query and iterate all returned rows
+
+```php
+sql_each('select * from users', function($user){
+  echo "<li><a href="mailto:{$user->email}">{$user->name}</a></li>";
+});
+```
+
+Passing parameters:
+
+```php
+sql_each('select * from users where activated = ?', function($user){
+  echo "<li><a href="mailto:{$user->email}">{$user->name}</a></li>";
+}, array('YES'));
+```
+
+#### Exec sql command
+
+```php
+if ( sql('delete from users where id = ?',array(123)) ) echo "User deleted.";
+```
+
+======================
 
 ## Contributing
 
