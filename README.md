@@ -29,17 +29,46 @@ include "https://raw.githubusercontent.com/lastguest/aleph/master/src/aleph.php"
 
 ## Documentation
 
-### URL Routing
+### Boostrap
+---
+
+Include composer `vendor/autoload.php` 
 
 ```php
 <?php
-include "aleph.php";
+include 'vendor/autoload.php';
+```
 
+or directly the `aleph.php` file in your front controller:
+
+```php
+<?php
+include 'aleph.php';
+```
+
+
+### URL Routing
+---
+
+
+```php
+
+// The index route
 get('/',function(){
   echo "<h1>Hello!</h1>";
 });
 
-// If you return an array or an object it will served as JSON 
+// Listen POST on /
+post('/',function(){
+  echo "<h1>Received POST Data:</h1><pre>";
+  print_r($_POST);
+  echo "</pre>";
+});
+```
+
+If you return an array or an object it will served as JSON 
+
+```php
 get('/api/todos',function(){
   return [
     [ "id"=>1, "text"=>"Write documentation" ],
@@ -50,7 +79,32 @@ get('/api/todos',function(){
 });
 ```
 
+The response will be :
+
+```json
+[
+    {
+        "id": 1,
+        "text": "Write documentation"
+    },
+    {
+        "id": 2,
+        "text": "Smile"
+    },
+    {
+        "id": 3,
+        "text": "Play more games"
+    },
+    {
+        "id": 4,
+        "text": "Conquer the World"
+    }
+]
+```
+
 ### Database
+---
+
 
 #### Init database DSN
 
@@ -95,6 +149,7 @@ if ( sql('delete from users where id = ?',array(123)) ) echo "User deleted.";
 
 
 ### Service
+---
 
 The Service function is a small DI container.
 
