@@ -20,12 +20,12 @@
 
 function service($name, $value=null){
   static $services = array();
-  if (is_null($value)) {
-    if (isset($services[$name])) {
-      return $services[$name] instanceof Closure ? $services[$name]() : $services[$name];
-    }
-  } else {
+  if (is_callable($value)) {
     $services[$name] = $value;
+  } else {
+    if (isset($services[$name])) {
+      return call_user_func_array($services[$name],array_slice(func_get_args(),1));
+    }
   }
 }
 

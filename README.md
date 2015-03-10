@@ -93,6 +93,56 @@ sql_each('select * from users where activated = ?', function($user){
 if ( sql('delete from users where id = ?',array(123)) ) echo "User deleted.";
 ```
 
+
+### Service
+
+The Service function is a small DI container.
+
+#### Register a factory method
+
+```php
+class TestService {
+	public $value;
+	function __construct($x){ $this->value = $x; }
+}
+
+service('test',function($x){
+	return new TestService($x);
+});
+```
+
+#### Make service instances
+
+```php
+$a = service('test',3);
+$b = service('test',5);
+```
+
+```json
+[{"value":3},{"value":5}]
+```
+
+#### Register a singleton service
+
+```php
+service('test',function($x){
+	static $instance = null;
+	return $instance === null ? $instance = new TestService($x) : $instance;
+});
+```
+
+Now if we call multiple times the `service('test')` function we got the singleton instance every time :
+
+```php
+$a = service('test',3);
+$b = service('test',5);
+$c = service('test');
+```
+
+```json
+[{"value":3},{"value":3},{"value":3}]
+```
+
 ======================
 
 ## Contributing
