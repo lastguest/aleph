@@ -8,7 +8,7 @@
  * @package aleph
  * @author lastguest@gmail.com
  * @url https://github.com/lastguest/aleph
- * @version 1.0.1
+ * @version 1.0.0
  * @copyright Stefano Azzolini - 2014 - http://dreamnoctis.com
  */
 
@@ -395,4 +395,113 @@ function route($method='@', $path='', $callback=null){
       );
     }
   }
+}
+
+/**
+ * ==========================
+ * DATABASE
+ * ==========================
+ */
+
+/**
+ * Database module
+ */
+function database(/* ... */){
+    $args = func_get_args();
+    $action = array_shift($args);
+    switch ($action) {
+        case 'init':
+            // Prepare new database service
+            service('database', function() use ($args) {
+                $pdo = new PDO(
+                               $args[0],
+                               isset($args[1])?$args[1]:'',
+                               isset($args[2])?$args[2]:'',
+                               array(
+                                PDO::ATTR_ERRMODE          => PDO::ERRMODE_EXCEPTION,
+                                PDO::ATTR_EMULATE_PREPARES => false,
+                              )
+                );
+                trigger('database.init',$pdo);
+                return $pdo;
+            });
+        break;
+    }
+}
+
+/**
+ * Standard database uses in-memory sqlite
+ */
+service('database', function(){
+    $pdo = new PDO('sqlite::memory:',array(
+        PDO::ATTR_ERRMODE          => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ));
+    trigger('database.init',$pdo);
+    return $pdo;
+});
+
+/**
+ * Fetch all results from sql query, via callback or as a whole.
+ */
+function sql_each($sql, $callback, $params=array()){
+    try {
+        $db = service('database');
+        $statement = $db->prepare($sql);
+        $statement->execute($params);
+        if (is_callable($callback)){
+            while ($row = $statement->fetchObject()){
+                call_user_func($callback, $row);
+            }
+        } else {
+            return $statement->fetchAll(PDO::FETCH_CLASS);
+        }
+    } catch (PDOException $e) {
+        trigger('database.error',$e,$sql,$params);
+        return false;
+    }
+}
+
+/**
+ * Fetch single row from sql results
+ */
+function sql_row($sql, $params=array()){
+    try {
+        $db = service('database');
+        $statement = $db->prepare($sql);
+        $statement->execute($params);
+        return $statement->fetchObject();
+    } catch (PDOException $e) {
+        trigger('database.error',$e,$sql,$params);
+        return false;
+    }
+}
+
+/**
+ * Fetch column from sql results
+ */
+function sql_value($sql, $params=array(), $column=0){
+    try {
+        $db = service('database');
+        $statement = $db->prepare($sql);
+        $statement->execute($params);
+        return $statement->fetchColumn($column);
+    } catch (PDOException $e) {
+        trigger('database.error',$e,$sql,$params);
+        return false;
+    }
+}
+
+/**
+ * Execute raw sql code
+ */
+function sql($sql, $params=array()){
+    try {
+        $db = service('database');
+        $statement = $db->prepare($sql);
+        return $statement->execute($params);
+    } catch (PDOException $e) {
+        trigger('database.error',$e,$sql,$params);
+        return false;
+    }
 }
