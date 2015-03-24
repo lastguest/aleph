@@ -15,7 +15,7 @@
 /*+ MINIMIZE */
 
 /**
- * DEPENDENCY CONTAINER
+ * DEPENDENCY CONTAINERte
  */
 
 function service($name, $value=null){
@@ -292,7 +292,8 @@ function template($name, $params=array()){
   $source = $templates[$template_file];
   return call_user_func(function() use ($source, $params){
     extract($params);
-    return eval('?>'.$source);
+    ob_start(); eval('?>'.$source); $___BUFF___ = ob_get_contents(); ob_end_clean();
+    return $___BUFF___;
   });
 }
 
