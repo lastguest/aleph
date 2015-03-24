@@ -8,11 +8,20 @@
  * @package aleph
  * @author lastguest@gmail.com
  * @url https://github.com/lastguest/aleph
- * @version 1.0.0
+ * @version 1.0.1
  * @copyright Stefano Azzolini - 2014 - http://dreamnoctis.com
  */
 
 /*+ MINIMIZE */
+
+/**
+ * Default options
+ */
+
+options('templates.dir',      __DIR__.'/templates');
+options('templates.cache.dir',    __DIR__.'/cache');
+options('templates.cache.enabled',  false);
+
 
 /**
  * DEPENDENCY CONTAINERte
@@ -146,22 +155,27 @@ function event($action, $event, $callback){
 /**
  * EMAIL
  */
-function email($from, $to, $subject, $body){
-  $time = $_SERVER['REQUEST_TIME'];
-  $head = implode("\r\n",array(
-    "From: {$from}",
-    "Reply-To: {$from}",
-    "Return-Path: {$from}",
-    "Content-type: text/html; charset=\"UTF-8\"",
-    "Content-Transfer-Encoding: 7bit",
-    "Date: " . date('r', $time),
-    "Message-ID: <$time".md5($time)."@{$_SERVER['SERVER_NAME']}>",
-    "MIME-Version: 1.0",
-  ));
-  $subject = '=?UTF-8?B?' . base64_encode(str_replace("\n", '', $subject)) . '?=';
+function email($from, $to, $subject, $body, array $extra_headers=array()){
+  $time     = $_SERVER['REQUEST_TIME'];
+  $headers  = array();
+  foreach(array_merge(array(
+    "From"                        => "{$from}",
+  ),array(
+    "Reply-To"                    => "{$from}",
+    "Return-Path"                 => "{$from}",
+  ), $extra_headers, array(
+    "Content-type"                => "text/html; charset=\"UTF-8\"",
+    "Content-Transfer-Encoding"   => "7bit",
+    "Date"                        => "" . date('r', $time),
+    "Message-ID"                  => "<$time".md5($time)."@".$_SERVER['SERVER_NAME'].">",
+    "MIME-Version"                => "1.0",
+  )) as $k => $v) $headers[] = "{$k}: {$v}";
+  $head     = implode("\r\n",$headers);
+  die($head);
+  $subject  = '=?UTF-8?B?' . base64_encode(str_replace("\n", '', $subject)) . '?=';
   foreach((array)$to as $recipient){
-    $_to = str_replace("\n", '', $recipient);
-    $results[$_to] = mail($_to,$subject,$body,$head);
+    $_to            = str_replace("\n", '', $recipient);
+    $results[$_to]  = mail($_to,$subject,$body,$head);
   }
   return $results;
 }
@@ -183,7 +197,6 @@ function filter($name, $callback = null){
     return $value;
   }
 }
-
 
 function on($event, $callback){
   event('on', $event, $callback);
@@ -208,11 +221,23 @@ function triggerOnce($event /* ... */){
 
 function template($name, $params=array()){
   static $templates = array();
-  $template_dir = rtrim(options('templates.dir')?:__DIR__.'/templates','/');
-  $name = trim($name,'/');
-  $template_file = "$template_dir/$name.html";
+  $use_cache      = !!options('templates.cache.enabled');
+  $template_dir   = rtrim(options('templates.dir')?:__DIR__.'/templates','/');
+  $name           = trim($name,'/');
+  $template_file  = "$template_dir/$name.html";
+
+  if ($use_cache) {
+    $cache_dir      = rtrim(options('templates.cache.dir')?:__DIR__.'/cache','/');
+    if (!is_dir($cache_dir)) @mkdir($cache_dir);
+    $template_cache = "$cache_dir/$name.php";
+
+    if (file_exists($template_cache)) {
+      $templates[$template_file] = file_get_contents($template_cache);
+    }
+  }
+
   if (!isset($templates[$template_file])) {
-    $getParam = function($tok){return '@$'.trim(str_replace('.','->',$tok));};
+    $getParam = function($tok){return function_exists(trim(strtok($tok,'(')))?$tok:'@$'.trim(str_replace('.','->',$tok));};
     $compiled = array();
     $state = 'html';
     $tokens = preg_split('~({{|}}|{%|%}|{#|#}|{&|&})~m',file_get_contents($template_file),-1,PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
@@ -288,8 +313,15 @@ function template($name, $params=array()){
       }
     }
     $templates[$template_file] = implode('',$compiled);
+
+    if ($use_cache) {
+      file_put_contents($template_cache, $templates[$template_file]);
+    }
+
   }
+
   $source = $templates[$template_file];
+
   return call_user_func(function() use ($source, $params){
     extract($params);
     ob_start(); eval('?>'.$source); $___BUFF___ = ob_get_contents(); ob_end_clean();
@@ -325,7 +357,6 @@ function delete($path, $callback){
   route('delete',$path,$callback);
 }
 
-
 function route($method='@', $path='', $callback=null){
   static $routes = array();
   if ($method == '@') {
@@ -334,8 +365,8 @@ function route($method='@', $path='', $callback=null){
       trigger(404);
       quit(404);
     }
-    foreach ($routes[$request['method']] as $route) {
-      if (preg_match('#^'.$route['pattern'].'$#',$request['uri'],$captures)){
+    foreach ($routes[$request['method']] as $pattern => $route) {
+      if (preg_match('#^/'.$pattern.'/?$#',$request['uri'],$captures)){
         array_shift($captures);
         trigger('route.before',$route,$captures);
         response('start');
@@ -351,16 +382,17 @@ function route($method='@', $path='', $callback=null){
         trigger('route.after',$route);
         return;
       }
-      trigger(404);
-      quit(404);
     }
+    trigger(404) or quit(404);
   } else {
-   $method = strtolower(trim($method));
-   if($path) $routes[$method][] = array(
-      'pattern'   => preg_replace_callback('#(:\w+)#', function($m){
-                        return '([^/]+)';
-                     }, str_replace('.','\.',$path)),
-      'callback'  => $callback ?: function(){},
-    );
+   if($path) {
+    $method = strtolower(trim($method));
+    $path = preg_replace_callback('#(:\w+)#', function($m){
+              return '([^/]+)';
+           }, str_replace('.','\.',trim($path,'/')));
+    $routes[$method][$path] = array(
+        'callback'  => $callback ?: function(){},
+      );
+    }
   }
 }
