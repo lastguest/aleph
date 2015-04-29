@@ -2,7 +2,6 @@
 
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/lastguest/aleph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Total Downloads](https://poser.pugx.org/lastguest/aleph/downloads.svg)](https://packagist.org/packages/lastguest/aleph)
 [![Latest Stable Version](https://poser.pugx.org/lastguest/aleph/v/stable.svg)](https://packagist.org/packages/lastguest/aleph)
 [![Latest Unstable Version](https://poser.pugx.org/lastguest/aleph/v/unstable.svg)](https://packagist.org/packages/lastguest/aleph)
 [![License](https://poser.pugx.org/lastguest/aleph/license.svg)](https://packagist.org/packages/lastguest/aleph)
@@ -14,7 +13,7 @@
 Install via [composer](https://getcomposer.org/download/):
 
 ```bash
-$ composer require lastguest/aleph -o
+$ composer require lastguest/aleph
 ```
 
 Or download only [the framework file](https://raw.githubusercontent.com/lastguest/aleph/master/src/aleph.php)
